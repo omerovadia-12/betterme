@@ -237,7 +237,11 @@ body {
 }
 
 /* ─── Tool Sheets ────────────────────────────────────────────────────────── */
-.sheet-modal { border-radius: 24px 24px 0 0; }
+.sheet-modal {
+  border-radius: 24px 24px 0 0;
+  height: auto;
+  max-height: 92vh;
+}
 .sheet-modal .toolbar { background: transparent; border-bottom: 1px solid var(--border); }
 .sheet-modal .toolbar-inner { padding: 0 16px; }
 .sheet-close { color: var(--primary); font-weight: 600; }
