@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BetterMe">
+  <meta name="theme-color" content="#2E7D5E">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>BetterMe</title>
+  <link rel="stylesheet" href="https://unpkg.com/framework7@9.0.3/framework7-bundle.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/framework7-icons/css/framework7-icons.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  ONBOARDING OVERLAY
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="onboarding">
+  <div class="ob-header">
+    <div class="ob-progress-bar"><div class="ob-progress-fill" id="ob-progress"></div></div>
+  </div>
+
+  <div class="ob-slides-wrap">
+    <div class="ob-slides" id="ob-slides">
+
+      <!-- Step 1: Welcome -->
+      <div class="ob-slide">
+        <div class="ob-emoji">🌱</div>
+        <div class="ob-title">You're ready to quit smoking.</div>
+        <div class="ob-subtitle">BetterMe is your 24/7 companion — built to help you handle cravings, track your progress, and stay committed. Let's set you up in just a few minutes.</div>
+      </div>
+
+      <!-- Step 2: N.O.P.E. Commitment -->
+      <div class="ob-slide">
+        <div class="ob-emoji">🤝</div>
+        <div class="ob-title">First, one commitment.</div>
+        <div class="ob-subtitle">Research shows that people who make a single unconditional rule quit more successfully. Your rule is simple:</div>
+        <div class="nope-card">
+          <div class="nope-word">N.O.P.E.</div>
+          <div class="nope-expand">Not One Puff Ever</div>
+          <div style="margin-top: 14px; font-size: 13px; opacity: 0.7; line-height: 1.5;">Not one puff, in any circumstance. Not to be polite. Not "just this once." This isn't a daily mantra — it's one decision, made once, that holds forever.</div>
+        </div>
+        <button class="ob-commit-btn" id="ob-nope-btn" onclick="BMOnboarding.commitNOPE()">
+          I commit — Not One Puff Ever
+        </button>
+      </div>
+
+      <!-- Step 3: About Your Smoking -->
+      <div class="ob-slide">
+        <div class="ob-emoji">📊</div>
+        <div class="ob-title">About your habit.</div>
+        <div class="ob-subtitle">This helps us calculate your savings and milestones accurately.</div>
+
+        <div class="ob-row">
+          <div class="ob-field">
+            <div class="ob-label">Cigarettes per day</div>
+            <input class="ob-input" type="number" id="ob-cigs" value="13" min="1" max="60">
+          </div>
+          <div class="ob-field">
+            <div class="ob-label">Cigs per pack</div>
+            <input class="ob-input" type="number" id="ob-pack-size" value="20" min="10" max="25">
+          </div>
+        </div>
+
+        <div class="ob-row">
+          <div class="ob-field">
+            <div class="ob-label">Cost per pack</div>
+            <input class="ob-input" type="number" id="ob-cost" value="42" min="1" step="0.5">
+          </div>
+          <div class="ob-field">
+            <div class="ob-label">Currency</div>
+            <select class="ob-select" id="ob-currency">
+              <option value="₪" selected>₪ Shekel</option>
+              <option value="$">$ Dollar</option>
+              <option value="€">€ Euro</option>
+              <option value="£">£ Pound</option>
+              <option value="₺">₺ Lira</option>
+              <option value="¥">¥ Yen</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Quit Date -->
+      <div class="ob-slide">
+        <div class="ob-emoji">🗓️</div>
+        <div class="ob-title">When does your journey start?</div>
+        <div class="ob-subtitle">Pick your quit date. Your tracker, streak, and savings all count from this day.</div>
+        <div class="ob-field">
+          <div class="ob-label">Quit date</div>
+          <input class="ob-input" type="date" id="ob-quit-date">
+        </div>
+      </div>
+
+      <!-- Step 5: Support Person -->
+      <div class="ob-slide">
+        <div class="ob-emoji">📞</div>
+        <div class="ob-title">Who will you call when it's hard?</div>
+        <div class="ob-subtitle">Having one person to reach out to during a craving dramatically increases your chances of success. Add them now — BetterMe will make it one tap to call.</div>
+        <div class="ob-field">
+          <div class="ob-label">Their name</div>
+          <input class="ob-input" type="text" id="ob-support-name" placeholder="e.g. Sarah">
+        </div>
+        <div class="ob-field">
+          <div class="ob-label">Their phone number</div>
+          <input class="ob-input" type="tel" id="ob-support-phone" placeholder="+972 50 000 0000">
+        </div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.5);">You can skip this and add it later in My Plan.</div>
+      </div>
+
+      <!-- Step 7: If-Then Plan -->
+      <div class="ob-slide">
+        <div class="ob-emoji">🗺️</div>
+        <div class="ob-title">Plan for your biggest trigger.</div>
+        <div class="ob-subtitle">"If-Then" plans remove willpower from the equation. When you pre-commit to an action, cravings can't catch you off guard. Fill in your #1 trigger now.</div>
+        <div class="ob-field">
+          <div class="ob-label">When this happens...</div>
+          <input class="ob-input" type="text" id="ob-ifthen-trigger" placeholder="e.g. I finish a meal and feel the urge">
+        </div>
+        <div class="ob-field">
+          <div class="ob-label">I will immediately...</div>
+          <input class="ob-input" type="text" id="ob-ifthen-action" placeholder="e.g. open BetterMe and do the breathing exercise">
+        </div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.5);">You can add more plans in My Plan tab later.</div>
+      </div>
+
+      <!-- Step 8: First Coping Card -->
+      <div class="ob-slide">
+        <div class="ob-emoji">🃏</div>
+        <div class="ob-title">Your first coping card.</div>
+        <div class="ob-subtitle">Coping cards interrupt automatic craving thoughts with a prepared response. What thought usually hits you hardest when you crave?</div>
+        <div class="ob-field">
+          <div class="ob-label">The craving thought</div>
+          <input class="ob-input" type="text" id="ob-card-thought" placeholder="e.g. Just one won't hurt">
+        </div>
+        <div class="ob-field">
+          <div class="ob-label">The truth (your response)</div>
+          <input class="ob-input" type="text" id="ob-card-response" placeholder="e.g. One puff is how I relapsed before — not one puff, ever">
+        </div>
+        <div class="ob-field">
+          <div class="ob-label">Action to take instead</div>
+          <input class="ob-input" type="text" id="ob-card-action" placeholder="e.g. Do the 7-minute timer in BetterMe">
+        </div>
+        <div style="font-size: 12px; color: rgba(255,255,255,0.5);">You can add more cards in My Plan tab later.</div>
+      </div>
+
+      <!-- Step 9: Ready -->
+      <div class="ob-slide" style="text-align: center; padding-top: 40px;">
+        <div class="ob-emoji" style="font-size: 72px;">🏁</div>
+        <div class="ob-title" style="text-align: center;">You're all set.</div>
+        <div class="ob-subtitle" style="text-align: center;">BetterMe is ready to support you. When a craving hits — open this app first. Every craving that passes without smoking is a victory.</div>
+        <div style="background: rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; margin-top: 8px; text-align: left;">
+          <div style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.8;">
+            ✓ N.O.P.E. committed<br>
+            ✓ Your reasons saved<br>
+            ✓ Crisis tools ready<br>
+            ✓ Tracker starts on your quit date
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- end slides-wrap -->
+
+  <div class="ob-footer">
+    <button class="ob-back-btn" id="ob-back" onclick="BMOnboarding.back()">← Back</button>
+    <button class="ob-next-btn" id="ob-next" onclick="BMOnboarding.next()">Continue →</button>
+  </div>
+</div><!-- end onboarding -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  MAIN APP
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="app">
+  <div class="view view-main safe-areas">
+    <div class="page no-swipeback">
+
+      <!-- Bottom Tab Bar -->
+      <div class="toolbar tabbar tabbar-labels toolbar-bottom">
+        <div class="toolbar-inner">
+          <a href="#tab-home"    class="tab-link tab-link-active">
+            <i class="icon f7-icons">house_fill</i>
+            <span class="tabbar-label">Home</span>
+          </a>
+          <a href="#tab-tools"   class="tab-link">
+            <i class="icon f7-icons">wand_stars</i>
+            <span class="tabbar-label">Tools</span>
+          </a>
+          <a href="#tab-crisis"  class="tab-link">
+            <i class="icon f7-icons">bolt_fill</i>
+            <span class="tabbar-label">Crisis</span>
+          </a>
+          <a href="#tab-plan"    class="tab-link">
+            <i class="icon f7-icons">map_fill</i>
+            <span class="tabbar-label">My Plan</span>
+          </a>
+          <a href="#tab-tracker" class="tab-link">
+            <i class="icon f7-icons">calendar</i>
+            <span class="tabbar-label">Tracker</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tabs">
+
+        <!-- ── HOME TAB ──────────────────────────────────────────────────── -->
+        <div class="page-content tab tab-active" id="tab-home">
+          <p class="section-title">BetterMe</p>
+          <div id="home-hero"></div>
+          <div id="home-milestone"></div>
+          <button class="crisis-trigger-btn" onclick="BMApp.goToCrisis()">
+            ⚡ I'm having a craving
+          </button>
+          <div class="spacer"></div>
+        </div>
+
+        <!-- ── TOOLS TAB ─────────────────────────────────────────────────── -->
+        <div class="page-content tab" id="tab-tools">
+          <p class="section-title">Tools</p>
+          <div class="tools-grid">
+
+            <button class="tool-card" onclick="BMTools.openBreathing()">
+              <span class="tool-icon">🫁</span>
+              <div class="tool-info">
+                <div class="tool-name">4-7-8 Breathing</div>
+                <div class="tool-desc">Urge surfing + guided breath. Clinically proven.</div>
+              </div>
+              <span class="tool-duration">4 min</span>
+            </button>
+
+            <button class="tool-card" onclick="BMTools.openPMR('short')">
+              <span class="tool-icon">🧘</span>
+              <div class="tool-info">
+                <div class="tool-name">Muscle Relaxation</div>
+                <div class="tool-desc">Progressive release from feet to face.</div>
+              </div>
+              <span class="tool-duration">4 min</span>
+            </button>
+
+            <button class="tool-card" onclick="BMTools.openTimer()">
+              <span class="tool-icon">🌊</span>
+              <div class="tool-info">
+                <div class="tool-name">Ride the Wave</div>
+                <div class="tool-desc">7-minute countdown. Every craving passes.</div>
+              </div>
+              <span class="tool-duration">7 min</span>
+            </button>
+
+            <button class="tool-card" onclick="BMTools.openPushups()">
+              <span class="tool-icon">💪</span>
+              <div class="tool-info">
+                <div class="tool-name">Push-ups</div>
+                <div class="tool-desc">Change your body state. Reset your mind.</div>
+              </div>
+              <span class="tool-duration">2 min</span>
+            </button>
+
+            <button class="tool-card" onclick="BMTools.openWater()">
+              <span class="tool-icon">💧</span>
+              <div class="tool-info">
+                <div class="tool-name">Drink Water</div>
+                <div class="tool-desc">Slow sipping satisfies the oral urge.</div>
+              </div>
+              <span class="tool-duration">2 min</span>
+            </button>
+
+            <button class="tool-card" onclick="BMTools.openPMR('long')">
+              <span class="tool-icon">🛌</span>
+              <div class="tool-info">
+                <div class="tool-name">Deep Relaxation</div>
+                <div class="tool-desc">Full PMR — 13 muscle groups. For evenings.</div>
+              </div>
+              <span class="tool-duration">15 min</span>
+            </button>
+
+          </div>
+          <div class="spacer"></div>
+        </div>
+
+        <!-- ── CRISIS TAB ─────────────────────────────────────────────────── -->
+        <div class="page-content tab" id="tab-crisis">
+          <div class="crisis-header">
+            <h2>⚡ Crisis Mode</h2>
+            <p>Every craving you've ever had has passed. This one will too.</p>
+          </div>
+          <div id="crisis-content"></div>
+        </div>
+
+        <!-- ── MY PLAN TAB ────────────────────────────────────────────────── -->
+        <div class="page-content tab" id="tab-plan">
+          <p class="section-title">My Plan</p>
+          <div id="plan-content"></div>
+          <div class="spacer"></div>
+        </div>
+
+        <!-- ── TRACKER TAB ────────────────────────────────────────────────── -->
+        <div class="page-content tab" id="tab-tracker">
+          <p class="section-title">Tracker</p>
+          <div id="tracker-content"></div>
+          <div class="spacer"></div>
+        </div>
+
+      </div><!-- end tabs -->
+
+    </div><!-- end page -->
+  </div><!-- end view -->
+</div><!-- end app -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  TOOL SHEETS (slide up from bottom)
+════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- Breathing Sheet -->
+<div class="sheet-modal sheet-modal-push" id="sheet-breathing">
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="left"></div>
+      <div class="title" style="font-weight:700">4-7-8 Breathing</div>
+      <div class="right"><a class="link sheet-close" onclick="BMTools.stopBreathing()">Done</a></div>
+    </div>
+  </div>
+  <div class="sheet-modal-inner page-content">
+    <div class="breathing-container">
+      <div class="breath-visual-wrap">
+        <div class="breath-ring breath-ring-1"></div>
+        <div class="breath-ring breath-ring-2"></div>
+        <div class="breath-circle" id="breath-circle">
+          <div class="breath-phase" id="breath-phase">Ready</div>
+          <div class="breath-count" id="breath-count">4</div>
+        </div>
+      </div>
+      <div class="breath-prompt" id="breath-prompt">A craving has arrived. Let's breathe through it together.</div>
+      <div class="breath-subtext" id="breath-subtext">Cravings are waves — they rise, peak, and pass.</div>
+      <div class="breath-cycle-indicator" id="breath-cycles">
+        <div class="cycle-dot" id="cd-0"></div>
+        <div class="cycle-dot" id="cd-1"></div>
+        <div class="cycle-dot" id="cd-2"></div>
+        <div class="cycle-dot" id="cd-3"></div>
+      </div>
+      <div class="breath-controls">
+        <button class="breath-start-btn" id="breath-start-btn" onclick="BMTools.startBreathing()">Start</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PMR Sheet -->
+<div class="sheet-modal sheet-modal-push" id="sheet-pmr">
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="left"></div>
+      <div class="title" style="font-weight:700">Muscle Relaxation</div>
+      <div class="right"><a class="link sheet-close" onclick="BMTools.stopPMR()">Done</a></div>
+    </div>
+  </div>
+  <div class="sheet-modal-inner page-content">
+    <div class="pmr-container">
+      <div class="pmr-version-tabs">
+        <button class="pmr-tab-btn active" id="pmr-tab-short" onclick="BMTools.setPMRVersion('short')">Short — 4 min</button>
+        <button class="pmr-tab-btn" id="pmr-tab-long" onclick="BMTools.setPMRVersion('long')">Full — 15 min</button>
+      </div>
+      <div class="pmr-muscle-group" id="pmr-muscle">
+        <div class="pmr-muscle-name" id="pmr-muscle-name">Ready to begin</div>
+        <div class="pmr-instruction" id="pmr-instruction">Sit or lie comfortably. Let your eyes close.</div>
+      </div>
+      <div class="pmr-phase-indicator">
+        <div class="pmr-phase active" id="pmr-phase">Prepare</div>
+      </div>
+      <div class="breath-controls">
+        <button class="breath-start-btn" id="pmr-start-btn" onclick="BMTools.startPMR()">Start</button>
+      </div>
+      <div class="breath-cycle-indicator" id="pmr-progress" style="margin-top:16px;flex-wrap:wrap;gap:4px;max-width:200px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Wave Timer Sheet -->
+<div class="sheet-modal sheet-modal-push" id="sheet-timer">
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="left"></div>
+      <div class="title" style="font-weight:700">Ride the Wave</div>
+      <div class="right"><a class="link sheet-close" onclick="BMTools.stopTimer()">Done</a></div>
+    </div>
+  </div>
+  <div class="sheet-modal-inner page-content">
+    <div class="timer-display">
+      <div class="timer-svg-wrap">
+        <svg class="timer-svg" viewBox="0 0 220 220" width="220" height="220">
+          <circle class="timer-track" cx="110" cy="110" r="96"/>
+          <circle class="timer-arc" id="timer-arc" cx="110" cy="110" r="96"
+            stroke-dasharray="603.2" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-center">
+          <div class="timer-time" id="timer-display">7:00</div>
+          <div class="timer-label">minutes</div>
+        </div>
+      </div>
+      <div class="timer-message" id="timer-msg">The most intense part of a craving lasts about 7 minutes. You just need to get through this window.</div>
+      <button class="timer-btn" id="timer-start-btn" onclick="BMTools.toggleTimer()">Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pushups Sheet -->
+<div class="sheet-modal" id="sheet-pushups">
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="left"></div>
+      <div class="title" style="font-weight:700">Push-ups</div>
+      <div class="right"><a class="link sheet-close">Done</a></div>
+    </div>
+  </div>
+  <div class="sheet-modal-inner page-content">
+    <div class="pushup-container">
+      <div class="pushup-count" id="pushup-count">0</div>
+      <div class="pushup-label">push-ups</div>
+      <div style="font-size:14px;color:var(--text-muted);margin-bottom:32px;line-height:1.5;text-align:center">
+        Each rep changes your body chemistry.<br>Channel the craving energy.
+      </div>
+      <div class="pushup-controls">
+        <button class="pushup-btn pushup-minus" onclick="BMTools.adjustPushups(-1)">−</button>
+        <button class="pushup-btn pushup-plus"  onclick="BMTools.adjustPushups(1)">+</button>
+      </div>
+      <div id="pushup-message" style="margin-top:24px;font-size:15px;color:var(--primary);font-weight:600;text-align:center;min-height:24px"></div>
+      <button onclick="BMTools.resetPushups()" style="margin-top:20px;background:none;border:none;color:var(--text-muted);font-size:14px;cursor:pointer">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Water Sheet -->
+<div class="sheet-modal" id="sheet-water">
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="left"></div>
+      <div class="title" style="font-weight:700">Drink Water</div>
+      <div class="right"><a class="link sheet-close">Done</a></div>
+    </div>
+  </div>
+  <div class="sheet-modal-inner page-content">
+    <div style="padding:32px 24px;text-align:center">
+      <div style="font-size:72px;margin-bottom:20px">💧</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:12px">Go get a large glass of water.</div>
+      <div style="font-size:15px;color:var(--text-muted);line-height:1.6;margin-bottom:32px">
+        Drink it slowly — little by little. Sipping satisfies the oral urge and gives your hands something to do. Take at least 2 minutes.
+      </div>
+      <div style="font-size:48px;font-weight:800;color:var(--primary);margin-bottom:8px" id="water-timer-display">2:00</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:24px">sip slowly until the timer ends</div>
+      <button class="timer-btn" id="water-start-btn" onclick="BMTools.toggleWater()">Start Sipping</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  ADD/EDIT MODALS (via F7 popups)
+════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- Add Reason Modal -->
+<div class="popup" id="popup-reason">
+  <div class="page">
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="title">Add Reason</div>
+        <div class="right"><a class="link popup-close">Cancel</a></div>
+      </div>
+    </div>
+    <div class="page-content popup-inner">
+      <div class="modal-field">
+        <label class="modal-label">Your reason for quitting</label>
+        <textarea class="modal-input" id="modal-reason-text" rows="3" placeholder="Write it in your own words — be specific and personal" style="resize:none"></textarea>
+      </div>
+      <button class="modal-btn primary" onclick="BMPlan.saveReason()">Save Reason</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add If-Then Modal -->
+<div class="popup" id="popup-ifthen">
+  <div class="page">
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="title">Add If-Then Plan</div>
+        <div class="right"><a class="link popup-close">Cancel</a></div>
+      </div>
+    </div>
+    <div class="page-content popup-inner">
+      <div class="modal-field">
+        <label class="modal-label">When this happens...</label>
+        <input class="modal-input" type="text" id="modal-ifthen-trigger" placeholder="e.g. I finish dinner and feel the urge">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">I will immediately...</label>
+        <input class="modal-input" type="text" id="modal-ifthen-action" placeholder="e.g. open BetterMe and start the breathing exercise">
+      </div>
+      <button class="modal-btn primary" onclick="BMPlan.saveIfThen()">Save Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Coping Card Modal -->
+<div class="popup" id="popup-card">
+  <div class="page">
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="title">Add Coping Card</div>
+        <div class="right"><a class="link popup-close">Cancel</a></div>
+      </div>
+    </div>
+    <div class="page-content popup-inner">
+      <div class="modal-field">
+        <label class="modal-label">The craving thought (trigger)</label>
+        <input class="modal-input" type="text" id="modal-card-thought" placeholder="e.g. Just one cigarette won't hurt">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">The truth (your rational response)</label>
+        <textarea class="modal-input" id="modal-card-response" rows="2" placeholder="e.g. One puff is how every relapse starts. This craving will pass in 7 minutes." style="resize:none"></textarea>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Action to take</label>
+        <input class="modal-input" type="text" id="modal-card-action" placeholder="e.g. Start the breathing exercise">
+      </div>
+      <button class="modal-btn primary" onclick="BMPlan.saveCard()">Save Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- Day Log Modal -->
+<div class="popup" id="popup-log">
+  <div class="page">
+    <div class="navbar">
+      <div class="navbar-inner">
+        <div class="title" id="log-modal-title">Log Today</div>
+        <div class="right"><a class="link popup-close">Cancel</a></div>
+      </div>
+    </div>
+    <div class="page-content popup-inner">
+      <div class="log-modal">
+        <div style="font-size:15px;color:var(--text-muted);margin-bottom:20px">How did <span id="log-day-label">today</span> go?</div>
+        <div class="log-choice-row">
+          <button class="log-choice-btn" id="log-btn-free" onclick="BMTracker.selectLog('free')">
+            <span class="lc-icon">✅</span>
+            <span>Smoke-Free</span>
+          </button>
+          <button class="log-choice-btn" id="log-btn-smoked" onclick="BMTracker.selectLog('smoked')">
+            <span class="lc-icon">😔</span>
+            <span>I Smoked</span>
+          </button>
+        </div>
+        <div class="modal-field" style="margin-top:12px">
+          <label class="modal-label">Note (optional)</label>
+          <input class="modal-input" type="text" id="log-note" placeholder="How are you feeling?">
+        </div>
+        <button class="modal-btn primary" id="log-save-btn" onclick="BMTracker.saveLog()" disabled>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+  SCRIPTS
+════════════════════════════════════════════════════════════════════════════ -->
+<script src="https://unpkg.com/framework7@9.0.3/framework7-bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/home.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/crisis.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/tracker.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
