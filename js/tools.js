@@ -64,35 +64,89 @@ const BMTools = {
   startBreathing() {
     if (this._breathRunning) return;
     this._breathRunning = true;
-    if (CONFIG.USE_ELEVENLABS_AUDIO) this._playAudio('breathing.mp3');
     document.getElementById('breath-start-btn').textContent = 'Running…';
     document.getElementById('breath-start-btn').disabled = true;
 
-    const script = [
-      // Intro
-      { phase: 'intro', prompt: "Find a comfortable position. Place one hand on your belly.", subtext: "", duration: 3500 },
-      { phase: 'intro', prompt: "Notice where you feel the craving in your body.", subtext: "Don't push it away — just observe. You're the observer, not the craving.", duration: 4000 },
-      // Cycle 1
-      { phase: 'inhale', prompt: "Breathe in through your nose…", subtext: "Slow and steady", duration: 4000, count: 4, cycle: 0 },
-      { phase: 'hold',   prompt: "Hold…",                          subtext: "Stay with it", duration: 7000, count: 7, cycle: 0 },
-      { phase: 'exhale', prompt: "Breathe out slowly through your mouth…", subtext: "Let it all go", duration: 8000, count: 8, cycle: 0 },
-      // Cycle 2
-      { phase: 'inhale', prompt: "Again. Breathe in…",             subtext: "Feel your body softening", duration: 4000, count: 4, cycle: 1 },
-      { phase: 'hold',   prompt: "Hold…",                          subtext: "", duration: 7000, count: 7, cycle: 1 },
-      { phase: 'exhale', prompt: "And breathe out…",               subtext: "Notice how the craving shifts", duration: 8000, count: 8, cycle: 1 },
-      // Cycle 3
-      { phase: 'inhale', prompt: "One more time. In through the nose…", subtext: "", duration: 4000, count: 4, cycle: 2 },
-      { phase: 'hold',   prompt: "Hold…",                          subtext: "The wave is already breaking", duration: 7000, count: 7, cycle: 2 },
-      { phase: 'exhale', prompt: "Long breath out…",               subtext: "Let it go completely", duration: 8000, count: 8, cycle: 2 },
-      // Cycle 4
-      { phase: 'inhale', prompt: "Final breath in…",               subtext: "", duration: 4000, count: 4, cycle: 3 },
-      { phase: 'hold',   prompt: "Hold…",                          subtext: "", duration: 7000, count: 7, cycle: 3 },
-      { phase: 'exhale', prompt: "And breathe out…",               subtext: "Completely. Fully. Done.", duration: 8000, count: 8, cycle: 3 },
-      // Close
-      { phase: 'done', prompt: "You made it through.", subtext: "This craving is already passing. That was real strength.", duration: 5000 },
-    ];
+    if (CONFIG.USE_ELEVENLABS_AUDIO) {
+      // Audio mode: circle runs its own autonomous loop timed to 0.85× speed.
+      // Voice sets the mood; circle gives exact breathing timing. No drift.
+      this._playAudio('breathing.mp3');
+      this._runAudioBreath();
+    } else {
+      // No audio: script-driven with Web Speech API (perfectly synced).
+      this._runScript([
+        { phase: 'intro',  prompt: "Find a comfortable position. Place one hand on your belly.", subtext: "", duration: 3500 },
+        { phase: 'intro',  prompt: "Notice where you feel the craving.", subtext: "Don't push it away — just observe.", duration: 4000 },
+        { phase: 'inhale', prompt: "Breathe in through your nose…", subtext: "Slow and steady",           duration: 4000, count: 4, cycle: 0 },
+        { phase: 'hold',   prompt: "Hold…",                         subtext: "Stay with it",               duration: 7000, count: 7, cycle: 0 },
+        { phase: 'exhale', prompt: "Breathe out slowly…",           subtext: "Let it all go",              duration: 8000, count: 8, cycle: 0 },
+        { phase: 'inhale', prompt: "Again. Breathe in…",            subtext: "Feel your body softening",   duration: 4000, count: 4, cycle: 1 },
+        { phase: 'hold',   prompt: "Hold…",                         subtext: "",                           duration: 7000, count: 7, cycle: 1 },
+        { phase: 'exhale', prompt: "And breathe out…",              subtext: "Notice how the craving shifts", duration: 8000, count: 8, cycle: 1 },
+        { phase: 'inhale', prompt: "One more. In through the nose…",subtext: "",                           duration: 4000, count: 4, cycle: 2 },
+        { phase: 'hold',   prompt: "Hold…",                         subtext: "The wave is already breaking", duration: 7000, count: 7, cycle: 2 },
+        { phase: 'exhale', prompt: "Long breath out…",              subtext: "Let it go completely",       duration: 8000, count: 8, cycle: 2 },
+        { phase: 'inhale', prompt: "Final breath in…",              subtext: "",                           duration: 4000, count: 4, cycle: 3 },
+        { phase: 'hold',   prompt: "Hold…",                         subtext: "",                           duration: 7000, count: 7, cycle: 3 },
+        { phase: 'exhale', prompt: "And breathe out…",              subtext: "Completely. Fully. Done.",   duration: 8000, count: 8, cycle: 3 },
+        { phase: 'done',   prompt: "You made it through.",          subtext: "The craving has passed. Real strength.", duration: 5000 },
+      ], 0);
+    }
+  },
 
-    this._runScript(script, 0);
+  // Autonomous loop — timers scaled to 0.85× audio speed (÷ 0.85 ≈ × 1.176)
+  _runAudioBreath() {
+    const INHALE = 4700;  // 4s at normal → 4700ms at 0.85×
+    const HOLD   = 8200;  // 7s → 8200ms
+    const EXHALE = 9400;  // 8s → 9400ms
+    const INTRO  = 6000;  // wait for short audio intro to finish
+    const GAP    = 2200;  // between-cycle pause (narrator says "Good.")
+
+    document.getElementById('breath-prompt').textContent  = 'Close your eyes. Follow the circle.';
+    document.getElementById('breath-subtext').textContent = 'The narrator will guide you in.';
+
+    let cycle = 0;
+
+    const runCycle = () => {
+      if (!this._breathRunning) return;
+      if (cycle >= 4) { this._finishBreathing(); return; }
+
+      [0,1,2,3].forEach(i => {
+        document.getElementById(`cd-${i}`).className = 'cycle-dot' +
+          (i < cycle ? ' done' : i === cycle ? ' active' : '');
+      });
+
+      // Inhale
+      this._applyStep({ phase: 'inhale', prompt: 'Breathe in…', subtext: '', count: 4, cycle });
+      this._countdown(4, INHALE);
+      this._breathTimer = setTimeout(() => {
+        if (!this._breathRunning) return;
+        // Hold
+        this._applyStep({ phase: 'hold', prompt: 'Hold…', subtext: '', count: 7, cycle });
+        this._countdown(7, HOLD);
+        this._breathTimer = setTimeout(() => {
+          if (!this._breathRunning) return;
+          // Exhale
+          this._applyStep({ phase: 'exhale', prompt: 'Breathe out…', subtext: '', count: 8, cycle });
+          this._countdown(8, EXHALE);
+          this._breathTimer = setTimeout(() => {
+            cycle++;
+            if (cycle < 4) {
+              // Neutral gap while narrator says "Good."
+              document.getElementById('breath-circle').className = 'breath-circle';
+              document.getElementById('breath-phase').textContent  = '';
+              document.getElementById('breath-count').textContent  = '';
+              document.getElementById('breath-prompt').textContent = '…';
+              this._breathTimer = setTimeout(runCycle, GAP);
+            } else {
+              runCycle(); // triggers _finishBreathing
+            }
+          }, EXHALE);
+        }, HOLD);
+      }, INHALE);
+    };
+
+    this._breathTimer = setTimeout(runCycle, INTRO);
   },
 
   _runScript(script, idx) {

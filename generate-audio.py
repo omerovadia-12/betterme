@@ -33,45 +33,39 @@ OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "audio")
 # ─── Scripts ───────────────────────────────────────────────────────────────────
 
 BREATHING_SCRIPT = """
-A craving has arrived. That's okay.
+Close your eyes. A craving has arrived — that's okay. Follow the circle and breathe with me.
 
-Cravings are just waves. They rise, they peak, and they pass. You don't have to fight this one. You just have to breathe through it. Let's do that together.
+Breathe in... one... two... three... four.
 
-Find a comfortable position. If you can, sit upright. Place one hand on your chest and one on your belly. Close your eyes, or soften your gaze downward.
+Hold... one... two... three... four... five... six... seven.
 
-Take a moment to notice where you feel the craving in your body. Maybe it's a tightness in your chest. A restlessness in your hands. A pull in the back of your throat. Don't try to push it away — just notice it. You're the observer. You are not the craving.
-
-Now let's breathe.
-
-Breathe in slowly through your nose... one... two... three... four.
-
-Hold gently... one... two... three... four... five... six... seven.
-
-Now breathe out fully through your mouth, nice and slow... one... two... three... four... five... six... seven... eight.
+Breathe out... one... two... three... four... five... six... seven... eight.
 
 Good.
 
-Again. Breathe in through the nose... one... two... three... four.
+Breathe in... one... two... three... four.
 
 Hold... one... two... three... four... five... six... seven.
 
-And breathe out slowly... one... two... three... four... five... six... seven... eight.
+Breathe out... one... two... three... four... five... six... seven... eight.
 
-Notice how your body is beginning to soften.
+Good.
 
-One more time. In through your nose... one... two... three... four.
+Breathe in... one... two... three... four.
 
 Hold... one... two... three... four... five... six... seven.
 
-And out... long and slow... one... two... three... four... five... six... seven... eight.
+Breathe out... one... two... three... four... five... six... seven... eight.
 
-Let it go.
+Good.
 
-Now check back in with that craving. Notice — has it shifted at all? Maybe it feels a little smaller. Maybe a little less urgent. That's the wave beginning to break. It always does. Every craving you've ever had has passed. This one will too.
+Breathe in... one... two... three... four.
 
-Take one final slow breath in... and sigh it out. Let your shoulders drop. Let your jaw unclench.
+Hold... one... two... three... four... five... six... seven.
 
-You made it through this moment. That was real strength. Whenever the next wave comes, you know what to do. Come back here. Breathe. Ride it out.
+And release... one... two... three... four... five... six... seven... eight.
+
+You made it. The craving has passed. That was real strength.
 """
 
 PMR_SHORT_SCRIPT = """
@@ -245,10 +239,11 @@ def generate_audio(api_key: str, text: str, output_path: str):
         "text": text.strip(),
         "model_id": MODEL_ID,
         "voice_settings": {
-            "stability":         0.75,
+            "stability":         0.80,
             "similarity_boost":  0.75,
-            "style":             0.3,
+            "style":             0.2,
             "use_speaker_boost": True,
+            "speed":             0.85,
         },
     }
     print(f"  Generating {os.path.basename(output_path)}...")
