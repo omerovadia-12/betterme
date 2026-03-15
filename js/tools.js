@@ -5,10 +5,11 @@ const BMTools = {
   // ── Audio ─────────────────────────────────────────────────────────────────
   _audio: null,
 
-  _playAudio(filename) {
+  _playAudio(filename, onEnd) {
     this._stopAudio();
     this._audio = new Audio(`audio/${filename}`);
-    this._audio.play().catch(() => {});
+    if (onEnd) this._audio.addEventListener('ended', onEnd);
+    this._audio.play().catch(() => { if (onEnd) setTimeout(onEnd, 3000); });
   },
 
   _stopAudio() {
@@ -17,6 +18,24 @@ const BMTools = {
       this._audio.currentTime = 0;
       this._audio = null;
     }
+  },
+
+  // Soft sine-wave bowl tone — phase transition cue (no file needed)
+  _playTone(hz = 432, durationSec = 1.2) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = hz;
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationSec);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + durationSec);
+    } catch (e) {}
   },
 
   _stopAll() {
@@ -94,17 +113,21 @@ const BMTools = {
     }
   },
 
-  // Autonomous loop — timers scaled to 0.85× audio speed (÷ 0.85 ≈ × 1.176)
+  // Audio mode: intro mp3 plays first, cycles start on its 'ended' event.
+  // Coaching tips play between cycles (also via ended event). No hardcoded delays.
+  // Phase transitions cued by soft bowl tones. Visual countdown runs at true 4-7-8.
   _runAudioBreath() {
-    const INHALE = 4700;  // 4s at normal → 4700ms at 0.85×
-    const HOLD   = 8200;  // 7s → 8200ms
-    const EXHALE = 9400;  // 8s → 9400ms
-    const INTRO  = 6000;  // wait for short audio intro to finish
-    const GAP    = 2200;  // between-cycle pause (narrator says "Good.")
+    document.getElementById('breath-prompt').textContent  = 'Close your eyes. Listen.';
+    document.getElementById('breath-subtext').textContent = '';
 
-    document.getElementById('breath-prompt').textContent  = 'Close your eyes. Follow the circle.';
-    document.getElementById('breath-subtext').textContent = 'The narrator will guide you in.';
+    this._playAudio('breathing-intro.mp3', () => {
+      if (this._breathRunning) this._startBreathCycles();
+    });
+  },
 
+  _startBreathCycles() {
+    const INHALE = 4000, HOLD = 7000, EXHALE = 8000;
+    const TIPS = ['breathing-tip1.mp3', 'breathing-tip2.mp3', 'breathing-tip3.mp3'];
     let cycle = 0;
 
     const runCycle = () => {
@@ -116,37 +139,50 @@ const BMTools = {
           (i < cycle ? ' done' : i === cycle ? ' active' : '');
       });
 
-      // Inhale
+      // Inhale — 528 Hz (bright, ascending)
+      this._playTone(528, 1.2);
       this._applyStep({ phase: 'inhale', prompt: 'Breathe in…', subtext: '', count: 4, cycle });
       this._countdown(4, INHALE);
       this._breathTimer = setTimeout(() => {
         if (!this._breathRunning) return;
-        // Hold
+
+        // Hold — 396 Hz (stable, grounding)
+        this._playTone(396, 1.0);
         this._applyStep({ phase: 'hold', prompt: 'Hold…', subtext: '', count: 7, cycle });
         this._countdown(7, HOLD);
         this._breathTimer = setTimeout(() => {
           if (!this._breathRunning) return;
-          // Exhale
+
+          // Exhale — 432 Hz (releasing, soft)
+          this._playTone(432, 1.4);
           this._applyStep({ phase: 'exhale', prompt: 'Breathe out…', subtext: '', count: 8, cycle });
           this._countdown(8, EXHALE);
           this._breathTimer = setTimeout(() => {
+            const done = cycle;
             cycle++;
-            if (cycle < 4) {
-              // Neutral gap while narrator says "Good."
-              document.getElementById('breath-circle').className = 'breath-circle';
-              document.getElementById('breath-phase').textContent  = '';
-              document.getElementById('breath-count').textContent  = '';
+
+            // Reset circle to neutral while tip plays
+            document.getElementById('breath-circle').className = 'breath-circle';
+            document.getElementById('breath-phase').textContent  = '';
+            document.getElementById('breath-count').textContent  = '';
+
+            if (done < 3) {
+              // Play coaching tip then start next cycle
               document.getElementById('breath-prompt').textContent = '…';
-              this._breathTimer = setTimeout(runCycle, GAP);
+              this._playAudio(TIPS[done], () => {
+                if (this._breathRunning) runCycle();
+              });
             } else {
-              runCycle(); // triggers _finishBreathing
+              // Last cycle — play closing while showing done state
+              this._playAudio('breathing-closing.mp3');
+              this._finishBreathing();
             }
           }, EXHALE);
         }, HOLD);
       }, INHALE);
     };
 
-    this._breathTimer = setTimeout(runCycle, INTRO);
+    runCycle();
   },
 
   _runScript(script, idx) {

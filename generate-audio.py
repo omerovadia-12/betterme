@@ -31,41 +31,33 @@ MODEL_ID  = "eleven_turbo_v2"
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "audio")
 
 # ─── Scripts ───────────────────────────────────────────────────────────────────
+# Breathing is split into 5 short files so the JS can play them at exactly
+# the right moments — no silence gaps needed, no timing drift.
 
-BREATHING_SCRIPT = """
-Close your eyes. A craving has arrived — that's okay. Follow the circle and breathe with me.
+BREATHING_INTRO = """
+A craving has arrived. That's okay.
 
-Breathe in... one... two... three... four.
+Cravings are just waves — they rise, they peak, and they pass. You don't have to fight this one. Just breathe with me.
 
-Hold... one... two... three... four... five... six... seven.
+Follow the circle. Let it guide you.
+"""
 
-Breathe out... one... two... three... four... five... six... seven... eight.
+BREATHING_TIP_1 = """
+Good. Your nervous system is already calming down.
+"""
 
-Good.
+BREATHING_TIP_2 = """
+The craving is already shifting. It has no hold on you right now.
+"""
 
-Breathe in... one... two... three... four.
+BREATHING_TIP_3 = """
+One more cycle. You're almost through it.
+"""
 
-Hold... one... two... three... four... five... six... seven.
+BREATHING_CLOSING = """
+You made it. Every craving you've ever had has passed — and so did this one.
 
-Breathe out... one... two... three... four... five... six... seven... eight.
-
-Good.
-
-Breathe in... one... two... three... four.
-
-Hold... one... two... three... four... five... six... seven.
-
-Breathe out... one... two... three... four... five... six... seven... eight.
-
-Good.
-
-Breathe in... one... two... three... four.
-
-Hold... one... two... three... four... five... six... seven.
-
-And release... one... two... three... four... five... six... seven... eight.
-
-You made it. The craving has passed. That was real strength.
+That was real strength. Come back here whenever you need it.
 """
 
 PMR_SHORT_SCRIPT = """
@@ -223,9 +215,13 @@ You made it through. Well done.
 # ─── Generator ─────────────────────────────────────────────────────────────────
 
 AUDIO_FILES = [
-    ("breathing.mp3",  BREATHING_SCRIPT),
-    ("pmr-short.mp3",  PMR_SHORT_SCRIPT),
-    ("pmr-long.mp3",   PMR_LONG_SCRIPT),
+    ("breathing-intro.mp3",   BREATHING_INTRO),
+    ("breathing-tip1.mp3",    BREATHING_TIP_1),
+    ("breathing-tip2.mp3",    BREATHING_TIP_2),
+    ("breathing-tip3.mp3",    BREATHING_TIP_3),
+    ("breathing-closing.mp3", BREATHING_CLOSING),
+    ("pmr-short.mp3",         PMR_SHORT_SCRIPT),
+    ("pmr-long.mp3",          PMR_LONG_SCRIPT),
 ]
 
 def generate_audio(api_key: str, text: str, output_path: str):
@@ -239,11 +235,11 @@ def generate_audio(api_key: str, text: str, output_path: str):
         "text": text.strip(),
         "model_id": MODEL_ID,
         "voice_settings": {
-            "stability":         0.80,
+            "stability":         0.85,
             "similarity_boost":  0.75,
-            "style":             0.2,
+            "style":             0.15,
             "use_speaker_boost": True,
-            "speed":             0.85,
+            "speed":             0.75,
         },
     }
     print(f"  Generating {os.path.basename(output_path)}...")

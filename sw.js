@@ -1,4 +1,4 @@
-const CACHE_NAME = 'betterme-v1';
+const CACHE_NAME = 'betterme-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,9 +11,13 @@ const ASSETS = [
   '/js/crisis.js',
   '/js/plan.js',
   '/js/tracker.js',
-  'https://cdn.jsdelivr.net/npm/framework7@8/css/framework7.bundle.min.css',
-  'https://cdn.jsdelivr.net/npm/framework7@8/js/framework7.bundle.min.js',
-  'https://cdn.jsdelivr.net/npm/framework7-icons@5/css/framework7-icons.css',
+  '/audio/breathing-intro.mp3',
+  '/audio/breathing-tip1.mp3',
+  '/audio/breathing-tip2.mp3',
+  '/audio/breathing-tip3.mp3',
+  '/audio/breathing-closing.mp3',
+  '/audio/pmr-short.mp3',
+  '/audio/pmr-long.mp3',
 ];
 
 self.addEventListener('install', (e) => {
