@@ -12,22 +12,24 @@ A mobile-first PWA (Progressive Web App) to help quit smoking. Designed to be us
 - **PWA setup** — manifest.json, service worker (sw.js), apple-mobile-web-app meta tags, offline caching
 - **5-tab layout**: Home / Tools / Crisis / My Plan / Tracker
 - **8-step onboarding** — collects quit date, smoking stats, N.O.P.E. commitment, support person, if-then plan, coping card
+- **Deployed** on Vercel (auto-deploys on every `git push`)
+- **Cloud sync** via Supabase — data survives browser clears and works across devices
 
 ### Tabs & Features
 
 #### 🏠 Home
 - Days smoke-free counter
-- ₪ money saved (calculated from your smoking profile)
+- ₪ money saved (calculated from smoking profile)
 - Cigarettes not smoked
-- Health milestone card (auto-updates as time passes — 20min, 12hr, 1 day, 2 days...)
+- Health milestone card (auto-updates — 20min, 12hr, 1 day, 2 days, 2 weeks, 1 month, 1 year...)
 
 #### 🛠️ Tools (for use during cravings)
-- **4-7-8 Breathing** — voice-narrated urge surfing script (ElevenLabs TTS)
+- **4-7-8 Breathing** — narrated by ElevenLabs Sarah voice; circle animates the exact 4-7-8 timing; soft bowl tones (528/396/432 Hz) mark each phase; coaching tips play between cycles
 - **PMR Short** (4 min) — Progressive Muscle Relaxation, voice narrated
-- **PMR Long** (15 min) — Full body PMR, voice narrated
+- **PMR Long** (15 min) — Full body PMR, 11 muscle groups, voice narrated
 - **7-Minute Wave Timer** — animated SVG countdown ("ride the craving wave")
 - **Push-ups Counter** — physical distraction with rep counter
-- **Sip Water** — 30-second sipping timer
+- **Sip Water** — 2-minute sipping timer
 
 #### 🚨 Crisis Mode
 - One-tap entry from Home tab
@@ -53,26 +55,24 @@ A mobile-first PWA (Progressive Web App) to help quit smoking. Designed to be us
 - Daily reminder time picker
 - Tips on days you didn't succeed
 
-### Voice Narration
-- **ElevenLabs TTS** — Sarah voice (mature, reassuring)
-- Pre-generated mp3 files: `audio/breathing.mp3`, `audio/pmr-short.mp3`, `audio/pmr-long.mp3`
-- Browser speechSynthesis fallback if audio files unavailable
-- Generated via `generate-audio.py --api-key YOUR_KEY`
+### Voice Narration — Architecture
+- **ElevenLabs Sarah voice** — speed 0.75, stability 0.85, low style (calm, not dramatic)
+- **Breathing**: 5 separate mp3 files played by JS at exactly the right moment via `ended` events — no timing drift possible
+  - `breathing-intro.mp3` — opening narration while circle is at rest
+  - `breathing-tip1/2/3.mp3` — coaching tip between each cycle
+  - `breathing-closing.mp3` — closing after 4th cycle
+- **PMR**: single mp3 files (`pmr-short.mp3`, `pmr-long.mp3`) — narration runs alongside visual
+- **Fallback**: browser `speechSynthesis` if ElevenLabs files not present
+- **Phase transition tones**: Web Audio API sine waves (528Hz inhale / 396Hz hold / 432Hz exhale) — no file needed, generated live
 
 ### Data Layer
-- **localStorage** — primary layer (fast, offline)
-- **Supabase** — cloud sync layer (data survives browser clears, works across devices)
-- When Supabase credentials are empty, app runs on localStorage only
-- All data prefixed `bm_` in localStorage / `bm_data` table in Supabase
+- **localStorage** — primary layer (fast, offline, immediate)
+- **Supabase** — cloud sync (every write also pushes to cloud; on app start, cloud data is pulled down)
+- All data prefixed `bm_` in localStorage / `key-value` rows in Supabase `bm_data` table
 
 ### User Profile (set during onboarding)
-- Cigarettes per day: 13 (default)
-- Cost per pack: ₪42 (default)
-- Pack size: 20
-- Currency: ₪ (configurable)
-- Quit date
-- Support person name + phone
-- N.O.P.E. commitment flag
+- Cigarettes per day, cost per pack, pack size, currency (₪ default)
+- Quit date, support person name + phone, N.O.P.E. commitment flag
 
 ---
 
@@ -80,25 +80,30 @@ A mobile-first PWA (Progressive Web App) to help quit smoking. Designed to be us
 
 ```
 betterme/
-├── index.html          # App shell — all HTML, onboarding, modals
-├── manifest.json       # PWA manifest
-├── sw.js               # Service worker (offline caching)
-├── generate-audio.py   # ElevenLabs audio generator
+├── index.html               # App shell — all HTML, onboarding, modals
+├── manifest.json            # PWA manifest
+├── sw.js                    # Service worker (offline caching, v2 cache)
+├── generate-audio.py        # ElevenLabs audio generator
+├── PROGRESS.md              # This file
 ├── css/
-│   └── app.css         # All custom styles
+│   └── app.css              # All custom styles
 ├── js/
-│   ├── config.js       # API keys (Supabase, ElevenLabs flag)
-│   ├── db.js           # Data layer (localStorage + Supabase sync)
-│   ├── app.js          # Framework7 init + onboarding logic
-│   ├── home.js         # Home tab
-│   ├── tools.js        # All tool logic (breathing, PMR, timer, etc.)
-│   ├── crisis.js       # Crisis tab
-│   ├── plan.js         # My Plan tab
-│   └── tracker.js      # Tracker tab
+│   ├── config.js            # API keys (Supabase URL+key, ElevenLabs flag)
+│   ├── db.js                # Data layer (localStorage + Supabase sync)
+│   ├── app.js               # Framework7 init + onboarding logic
+│   ├── home.js              # Home tab
+│   ├── tools.js             # All tool logic (breathing, PMR, timer, etc.)
+│   ├── crisis.js            # Crisis tab
+│   ├── plan.js              # My Plan tab
+│   └── tracker.js           # Tracker tab
 ├── audio/
-│   ├── breathing.mp3   # Generated — ElevenLabs Sarah voice
-│   ├── pmr-short.mp3
-│   └── pmr-long.mp3
+│   ├── breathing-intro.mp3  # ElevenLabs — opening narration
+│   ├── breathing-tip1.mp3   # "Good. Your nervous system is calming down."
+│   ├── breathing-tip2.mp3   # "The craving is already shifting."
+│   ├── breathing-tip3.mp3   # "One more cycle. Almost through it."
+│   ├── breathing-closing.mp3# "You made it. Every craving passes."
+│   ├── pmr-short.mp3        # PMR 4-min narration
+│   └── pmr-long.mp3         # PMR 15-min narration
 └── icons/
     ├── icon-192.png
     └── icon-512.png
@@ -112,7 +117,10 @@ betterme/
 |---|---|---|
 | UI Framework | Framework7 v9.0.3 | iOS-native look and feel |
 | CDN | unpkg.com | jsDelivr had 404s on F7 v9 paths |
-| TTS | ElevenLabs (Sarah) + speechSynthesis fallback | Pre-generated for performance |
+| TTS | ElevenLabs (Sarah) speed 0.75 + speechSynthesis fallback | Pre-generated for performance; slower pace is calmer |
+| Breathing narration | 5-file split, JS-timed via `ended` events | Only way to avoid counting conflict; no silence gaps needed |
+| Phase cues | Web Audio API sine waves | Perfect sync, no extra files |
+| Narration style | Coach speaks between phases only, never during | Double-counting creates cognitive load; MBSR research supports this |
 | Storage | localStorage + Supabase | Offline-first, cloud backup |
 | Breathing technique | 4-7-8 (inhale 4 / hold 7 / exhale 8) | Evidence-based, superior to 4-5-6 |
 | Affirmations | Replaced with N.O.P.E. + if-then + factual reframes | Pop affirmations don't work; evidence says pre-commitment does |
@@ -123,82 +131,52 @@ betterme/
 
 ## Known Issues / Decisions Made
 
-- **Reasons slide removed from onboarding** — the + button had a CSS clipping bug that prevented clicks (the parent `overflow: hidden` clipped pointer events). Reasons can still be added from the My Plan tab after onboarding.
-- **PWA icons** — currently plain green squares. Can be improved later.
+- **Reasons slide removed from onboarding** — the + button was clipped by `overflow: hidden` on a parent. Reasons can be added from the My Plan tab after onboarding.
+- **PWA icons** — currently plain green squares. Can be improved.
+- **PMR narration not yet updated** — speed and sync changes pending user approval of breathing version first.
+
+---
+
+## Regenerating Audio
+
+Run this any time you need to regenerate:
+
+```bash
+cd /Users/omerovadia/betterme
+python3 generate-audio.py --api-key YOUR_ELEVENLABS_KEY
+```
+
+Then push:
+```bash
+git add audio/
+git commit -m "Regenerate audio"
+git push
+```
+
+---
+
+## Deployment
+
+- **GitHub**: github.com/omerovadia-12/betterme
+- **Vercel**: auto-deploys on every push to `main`
+- **Supabase**: connected — credentials in `js/config.js`
+
+To redeploy manually: just `git push` — Vercel picks it up in ~30 seconds.
 
 ---
 
 ## Next Steps
 
-### 1. Create Accounts (You do this — 5 min)
+### Immediate — Pending Your Feedback
+1. **Test breathing audio** — regenerate the 5 new files and check if speed 0.75 + no-counting feels right
+2. **If approved → apply to PMR**:
+   - Same speed (0.75) for `pmr-short.mp3` and `pmr-long.mp3`
+   - Adjust tense/release JS timers in `tools.js` to stay in sync with slower audio
+   - Update duration labels ("4 min" / "15 min") on tool cards to reflect new pacing
 
-| Service | URL | Notes |
-|---|---|---|
-| GitHub | github.com/signup | Free |
-| Vercel | vercel.com → Continue with GitHub | Free, auto-deploys from GitHub |
-| Supabase | supabase.com → Continue with GitHub | Free tier, 500MB |
-
----
-
-### 2. Push to GitHub (Terminal)
-
-```bash
-cd /Users/omerovadia/betterme
-git remote add origin https://github.com/YOUR_USERNAME/betterme.git
-git push -u origin main
-```
-
----
-
-### 3. Deploy to Vercel
-
-1. vercel.com → **Add New → Project**
-2. Import your `betterme` GitHub repo
-3. Leave all settings as-is → **Deploy**
-4. You get a URL like `betterme.vercel.app`
-5. On iPhone: open URL in Safari → Share → **Add to Home Screen**
-
----
-
-### 4. Set Up Supabase
-
-**Create the table** — go to Supabase → SQL Editor → run:
-
-```sql
-CREATE TABLE bm_data (
-  key TEXT PRIMARY KEY,
-  value JSONB
-);
-ALTER TABLE bm_data ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "allow all" ON bm_data FOR ALL USING (true) WITH CHECK (true);
-```
-
-**Get your credentials** — Supabase → Project Settings → API:
-- Copy `Project URL`
-- Copy `anon public` key
-
-**Paste into `js/config.js`:**
-
-```js
-SUPABASE_URL: 'https://xxxxx.supabase.co',
-SUPABASE_ANON_KEY: 'eyJ...',
-```
-
-**Push the update:**
-```bash
-git add js/config.js
-git commit -m "Add Supabase credentials"
-git push
-```
-Vercel auto-redeploys within ~30 seconds.
-
----
-
-### 5. Optional Improvements (future)
-
-- **Better app icons** — replace the plain green squares with a proper logo
-- **Re-add Reasons to onboarding** — fix the CSS clipping bug properly so the + button works inline during setup
-- **Supabase Auth** — add login so data syncs across multiple devices (currently uses anon access, single-device cloud backup only)
-- **Push notifications** — daily reminder to log your day (requires HTTPS, already handled by Vercel deploy)
+### Optional Improvements
+- **Better app icons** — replace plain green squares with a proper logo
+- **Re-add Reasons to onboarding** — properly fix the overflow clipping so + button works inline
+- **Milestone celebrations** — full-screen animation at key milestones (1 day, 1 week, 1 month, 1 year)
 - **Relapse recovery flow** — if you slip, a guided "get back on track" screen
-- **Milestone celebrations** — full-screen animation when hitting key milestones (20 min, 1 day, 1 week, 1 month, 1 year)
+- **Supabase Auth** — add login so data syncs across multiple devices (currently single-device cloud backup)
