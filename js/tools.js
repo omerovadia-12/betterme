@@ -10,9 +10,19 @@ const BMTools = {
     this._audio = new Audio(`audio/${filename}`);
     this._audio.addEventListener('ended', () => { if (onEnd) onEnd(); });
     this._audio.play().catch(() => {
-      // File missing — fall back to speechSynthesis then call onEnd
-      if (fallbackText) this._speak(fallbackText, 6000);
-      setTimeout(() => { if (onEnd) onEnd(); }, fallbackText ? 5000 : 500);
+      // File missing — speak directly via speechSynthesis (bypass USE_ELEVENLABS_AUDIO guard)
+      if (fallbackText && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(fallbackText);
+        u.rate = 0.78; u.pitch = 0.9; u.volume = 1;
+        const voices = window.speechSynthesis.getVoices();
+        const v = voices.find(x => x.name.includes('Samantha') || x.name.includes('Karen') || x.lang === 'en-US');
+        if (v) u.voice = v;
+        window.speechSynthesis.speak(u);
+        setTimeout(() => { if (onEnd) onEnd(); }, 5000);
+      } else {
+        setTimeout(() => { if (onEnd) onEnd(); }, 500);
+      }
     });
   },
 
@@ -127,7 +137,8 @@ const BMTools = {
     } catch (e) { this._audioCtx = null; }
 
     if (CONFIG.USE_ELEVENLABS_AUDIO) {
-      // No audio: script-driven with Web Speech API (perfectly synced).
+      this._runAudioBreath();
+    } else {
       this._runScript([
         { phase: 'intro',  prompt: "Find a comfortable position. Place one hand on your belly.", subtext: "", duration: 3500 },
         { phase: 'intro',  prompt: "Notice where you feel the craving.", subtext: "Don't push it away — just observe.", duration: 4000 },
