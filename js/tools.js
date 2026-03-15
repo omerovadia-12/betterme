@@ -2,6 +2,33 @@
 
 const BMTools = {
 
+  // ── Audio ─────────────────────────────────────────────────────────────────
+  _audio: null,
+
+  _playAudio(filename) {
+    this._stopAudio();
+    this._audio = new Audio(`audio/${filename}`);
+    this._audio.play().catch(() => {});
+  },
+
+  _stopAudio() {
+    if (this._audio) {
+      this._audio.pause();
+      this._audio.currentTime = 0;
+      this._audio = null;
+    }
+  },
+
+  _stopAll() {
+    this._stopBreath();
+    this._stopPMR();
+    clearInterval(this._timerInterval);
+    this._timerRunning = false;
+    clearInterval(this._waterInterval);
+    this._waterRunning = false;
+    this._stopAudio();
+  },
+
   // ── Breathing (4-7-8 + Urge Surfing) ─────────────────────────────────────
   _breathSeq: null,
   _breathTimer: null,
@@ -9,6 +36,7 @@ const BMTools = {
   _breathRunning: false,
 
   openBreathing() {
+    this._stopAll();
     f7App.sheet.open('#sheet-breathing');
     this.resetBreathing();
   },
@@ -36,6 +64,7 @@ const BMTools = {
   startBreathing() {
     if (this._breathRunning) return;
     this._breathRunning = true;
+    if (CONFIG.USE_ELEVENLABS_AUDIO) this._playAudio('breathing.mp3');
     document.getElementById('breath-start-btn').textContent = 'Running…';
     document.getElementById('breath-start-btn').disabled = true;
 
@@ -135,6 +164,7 @@ const BMTools = {
     this._breathRunning = false;
     clearTimeout(this._breathTimer);
     window.speechSynthesis && window.speechSynthesis.cancel();
+    this._stopAudio();
   },
 
   // ── PMR ───────────────────────────────────────────────────────────────────
@@ -165,6 +195,7 @@ const BMTools = {
   ],
 
   openPMR(version) {
+    this._stopAll();
     this._pmrVersion = version || 'short';
     this.setPMRVersion(this._pmrVersion);
     f7App.sheet.open('#sheet-pmr');
@@ -194,6 +225,9 @@ const BMTools = {
   startPMR() {
     if (this._pmrRunning) return;
     this._pmrRunning = true;
+    if (CONFIG.USE_ELEVENLABS_AUDIO) {
+      this._playAudio(this._pmrVersion === 'short' ? 'pmr-short.mp3' : 'pmr-long.mp3');
+    }
     document.getElementById('pmr-start-btn').textContent = 'Running…';
     document.getElementById('pmr-start-btn').disabled = true;
     this._pmrStep = 0;
@@ -256,6 +290,7 @@ const BMTools = {
     this._pmrRunning = false;
     clearTimeout(this._pmrTimer);
     window.speechSynthesis && window.speechSynthesis.cancel();
+    this._stopAudio();
   },
 
   // ── Wave Timer (7 min) ────────────────────────────────────────────────────
@@ -264,6 +299,7 @@ const BMTools = {
   _timerRunning: false,
 
   openTimer() {
+    this._stopAll();
     f7App.sheet.open('#sheet-timer');
     this.resetTimer();
   },
@@ -330,6 +366,7 @@ const BMTools = {
   _pushupCount: 0,
 
   openPushups() {
+    this._stopAll();
     this._pushupCount = 0;
     this._renderPushups();
     f7App.sheet.open('#sheet-pushups');
@@ -357,11 +394,12 @@ const BMTools = {
   _waterRunning: false,
 
   openWater() {
+    this._stopAll();
     this._waterRemaining = 120;
     this._waterRunning = false;
-    clearInterval(this._waterInterval);
     this._updateWaterDisplay(120);
     document.getElementById('water-start-btn').textContent = 'Start Sipping';
+    document.getElementById('water-start-btn').disabled = false;
     f7App.sheet.open('#sheet-water');
   },
 

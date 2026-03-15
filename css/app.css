@@ -241,6 +241,11 @@ body {
 .sheet-modal .toolbar { background: transparent; border-bottom: 1px solid var(--border); }
 .sheet-modal .toolbar-inner { padding: 0 16px; }
 .sheet-close { color: var(--primary); font-weight: 600; }
+.sheet-modal-inner.page-content {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+}
 
 /* Breathing animation */
 .breathing-container {
