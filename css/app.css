@@ -77,10 +77,10 @@ body {
 
 .ob-slide {
   flex: 0 0 100%; width: 100%; height: 100%;
-  padding: 28px 28px 0;
+  padding: 28px 28px calc(32px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column;
   color: white;
-  overflow: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
@@ -116,7 +116,7 @@ body {
 /* NOPE commitment */
 .nope-card {
   background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
-  border-radius: 20px; padding: 28px 24px; text-align: center; margin-bottom: 24px;
+  border-radius: 20px; padding: 20px 24px; text-align: center; margin-bottom: 20px;
 }
 .nope-word { font-size: 48px; font-weight: 900; letter-spacing: 6px; color: white; }
 .nope-expand { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 8px; }
