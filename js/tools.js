@@ -38,6 +38,7 @@ const BMTools = {
   _playTone(hz = 432, durationSec = 1.2) {
     const ctx = this._audioCtx;
     if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
     try {
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -57,6 +58,7 @@ const BMTools = {
   _startDrone() {
     const ctx = this._audioCtx;
     if (!ctx || this._drone) return;
+    if (ctx.state === 'suspended') ctx.resume();
     try {
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -322,24 +324,21 @@ const BMTools = {
   _pmrStep: 0,
 
   PMR_SHORT: [
-    { name: "Shoulders & Fists", instruction: "Shrug shoulders to ears, squeeze hands into fists.", tense: "Tense everything", release: "Drop it all", tenseSec: 6, releaseSec: 15 },
-    { name: "Belly", instruction: "Breathe in and pull your navel toward your spine.", tense: "Hold it tight", release: "Soften completely", tenseSec: 6, releaseSec: 15 },
-    { name: "Face", instruction: "Squeeze eyes, clench jaw, raise brows — whole face.", tense: "Scrunch it all", release: "Smooth and still", tenseSec: 6, releaseSec: 15 },
-    { name: "Whole Body", instruction: "Tense every single muscle at once — legs, belly, arms, face.", tense: "Everything tight", release: "Let go completely", tenseSec: 6, releaseSec: 20 },
+    { name: "Shoulders & Fists", instruction: "Shrug shoulders to ears, squeeze hands into fists.", tense: "Tense everything", release: "Drop it all", tenseSec: 12, releaseSec: 12 },
+    { name: "Belly", instruction: "Breathe in and pull your navel toward your spine.", tense: "Hold it tight", release: "Soften completely", tenseSec: 7, releaseSec: 11 },
+    { name: "Face", instruction: "Squeeze eyes, clench jaw, raise brows — whole face.", tense: "Scrunch it all", release: "Smooth and still", tenseSec: 7, releaseSec: 11 },
+    { name: "Whole Body", instruction: "Tense every single muscle at once — legs, belly, arms, face.", tense: "Everything tight", release: "Let go completely", tenseSec: 10, releaseSec: 14 },
   ],
 
   PMR_LONG: [
-    { name: "Feet & Toes", instruction: "Curl your toes downward hard, like gripping the floor.", tense: "Curl and grip", release: "Spread and soften", tenseSec: 6, releaseSec: 18 },
-    { name: "Calves", instruction: "Press heels into the floor, flex feet toward you.", tense: "Hold the tension", release: "Let calves melt down", tenseSec: 6, releaseSec: 18 },
-    { name: "Thighs", instruction: "Squeeze both thigh muscles firmly together.", tense: "Squeeze tight", release: "Legs heavy and loose", tenseSec: 6, releaseSec: 18 },
-    { name: "Buttocks", instruction: "Tighten and clench both sides firmly.", tense: "Clench", release: "Soften fully", tenseSec: 6, releaseSec: 16 },
-    { name: "Belly", instruction: "Breathe in, pull navel toward spine, brace your core.", tense: "Hold and brace", release: "Let it go soft", tenseSec: 6, releaseSec: 18 },
-    { name: "Hands & Arms", instruction: "Make tight fists, feel tension through your forearms.", tense: "Squeeze hard", release: "Open hands, feel the warmth", tenseSec: 6, releaseSec: 18 },
-    { name: "Shoulders", instruction: "Shrug both shoulders up toward your ears as high as they go.", tense: "Shrug and hold", release: "Drop them completely", tenseSec: 6, releaseSec: 18 },
-    { name: "Neck", instruction: "Gently press the back of your head backward, mild tension.", tense: "Press and hold", release: "Neck long and free", tenseSec: 5, releaseSec: 16 },
-    { name: "Jaw", instruction: "Clench jaw gently, press tongue to roof of mouth.", tense: "Clench", release: "Jaw slightly open, soft", tenseSec: 6, releaseSec: 18 },
-    { name: "Whole Face", instruction: "Squeeze eyes, scrunch nose, raise brows — whole face.", tense: "Scrunch everything", release: "Completely smooth", tenseSec: 6, releaseSec: 18 },
-    { name: "Full Body", instruction: "Tense every muscle at once from toes to face.", tense: "Everything tight", release: "Let go completely", tenseSec: 7, releaseSec: 25 },
+    { name: "Feet & Toes", instruction: "Curl your toes downward — as if gripping the floor. Squeeze and hold.", tense: "Curl and grip", release: "Spread wide, feet completely soft", tenseSec: 10, releaseSec: 16 },
+    { name: "Calves", instruction: "Press heels into the floor and flex your feet upward. Feel the tension build.", tense: "Hold the tension", release: "Let calves go soft and heavy", tenseSec: 10, releaseSec: 16 },
+    { name: "Thighs", instruction: "Squeeze the large muscles of both thighs firmly together. Inhale and hold.", tense: "Squeeze tight", release: "Legs loose and heavy", tenseSec: 10, releaseSec: 16 },
+    { name: "Belly", instruction: "Breathe in and tighten your abdominal muscles. Hold.", tense: "Hold and brace", release: "Soft belly, easy breath", tenseSec: 10, releaseSec: 16 },
+    { name: "Hands & Forearms", instruction: "Make tight fists — squeeze fingers into palms. Feel tension through your forearms.", tense: "Squeeze hard", release: "Open hands, feel the warmth", tenseSec: 10, releaseSec: 16 },
+    { name: "Shoulders", instruction: "Shrug both shoulders up toward your ears as high as they go. Hold.", tense: "Shrug and hold", release: "Drop them completely", tenseSec: 10, releaseSec: 16 },
+    { name: "Jaw & Face", instruction: "Clench your jaw gently, press tongue to roof of mouth. Feel tension through cheeks.", tense: "Clench and hold", release: "Jaw open slightly, tongue soft", tenseSec: 10, releaseSec: 16 },
+    { name: "Forehead & Brow", instruction: "Raise your eyebrows as high as you can — feel the stretch across your brow.", tense: "Hold the stretch", release: "Brow completely smooth", tenseSec: 10, releaseSec: 16 },
   ],
 
   openPMR(version) {
@@ -381,11 +380,11 @@ const BMTools = {
     this._pmrStep = 0;
     const steps = this._pmrVersion === 'short' ? this.PMR_SHORT : this.PMR_LONG;
 
-    // Intro
-    this._updatePMR('Take three slow breaths', 'Breathe in… and out. Settle into this moment.', 'Settling');
-    this._speak("Let's begin. Take three slow breaths and settle into this moment.", 5000);
+    // Intro — short: ~14s narration, long: ~44s narration (includes guided breathing intro)
+    const introDelay = this._pmrVersion === 'short' ? 14000 : 44000;
+    this._updatePMR('Settle in', 'Breathe in… and out. Let your body soften.', 'Settling');
 
-    this._pmrTimer = setTimeout(() => this._runPMR(steps, 0), 5000);
+    this._pmrTimer = setTimeout(() => this._runPMR(steps, 0), introDelay);
   },
 
   _runPMR(steps, idx) {
