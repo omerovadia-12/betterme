@@ -11,11 +11,14 @@ const f7App = new Framework7({
 const BMApp = {
   f7: f7App,
 
-  init() {
+  async init() {
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+
+    // Pull data from Supabase if credentials are set (no-op if not)
+    await DB.init();
 
     if (DB.isOnboarded()) {
       this.launchApp();

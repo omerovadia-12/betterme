@@ -1,9 +1,36 @@
 // ─── BetterMe Data Layer ──────────────────────────────────────────────────────
-// All reads/writes go through this module. When Supabase credentials are added
-// to config.js, this layer seamlessly switches from localStorage to the cloud.
+// localStorage is always the primary (fast, sync) layer.
+// When Supabase credentials are set in config.js, every write is also mirrored
+// to the cloud, and on first load the cloud data is pulled down.
 
 const DB = {
   PREFIX: 'bm_',
+  _sb: null,   // Supabase client, set in init()
+
+  // ── Supabase bootstrap ───────────────────────────────────────────────────────
+  async init() {
+    if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+      this._sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+      await this._pullFromCloud();
+    }
+  },
+
+  async _pullFromCloud() {
+    try {
+      const { data, error } = await this._sb.from('bm_data').select('key, value');
+      if (error) { console.warn('[BetterMe] Cloud pull error:', error.message); return; }
+      data.forEach(row => {
+        localStorage.setItem(this.PREFIX + row.key, JSON.stringify(row.value));
+      });
+    } catch (e) { console.warn('[BetterMe] Cloud pull failed:', e); }
+  },
+
+  _pushToCloud(key, value) {
+    if (!this._sb) return;
+    this._sb.from('bm_data').upsert({ key, value }).then(({ error }) => {
+      if (error) console.warn('[BetterMe] Cloud push error:', error.message);
+    });
+  },
 
   // ── Core localStorage helpers ───────────────────────────────────────────────
   _get(key) {
@@ -14,6 +41,7 @@ const DB = {
   },
   _set(key, value) {
     try { localStorage.setItem(this.PREFIX + key, JSON.stringify(value)); } catch {}
+    this._pushToCloud(key, value);
   },
 
   // ── Onboarding ──────────────────────────────────────────────────────────────
@@ -70,16 +98,6 @@ const DB = {
   },
   deleteCard(id) { this._set('cards', this.getCards().filter(c => c.id !== id)); },
 
-  // ── Future Self ─────────────────────────────────────────────────────────────
-  getFuture() { return this._get('future') || []; },
-  setFutureItem(domain, smokingPath, quitPath) {
-    const list = this.getFuture();
-    const idx = list.findIndex(f => f.domain === domain);
-    const item = { domain, smokingPath, quitPath };
-    if (idx >= 0) list[idx] = item; else list.push(item);
-    this._set('future', list);
-  },
-
   // ── Daily Logs ──────────────────────────────────────────────────────────────
   getLogs()  { return this._get('logs') || {}; },
   getLog(date) { return this.getLogs()[date] || null; },
@@ -131,7 +149,6 @@ const DB = {
     for (let i = 0; i < 365; i++) {
       const str = this.dateStr(date);
       if (str === today && !logs[str]) {
-        // today not yet logged — count as ongoing if yesterday was clean
         date.setDate(date.getDate() - 1);
         continue;
       }
@@ -172,7 +189,6 @@ const DB = {
       return { icon: '🚀', title: 'Your journey begins', text: 'Every minute without a cigarette is a victory. Keep going.' };
     }
     const current = passed[passed.length - 1];
-    // next milestone
     const next = milestones[passed.length];
     if (next) {
       const remaining = next.mins - mins;
