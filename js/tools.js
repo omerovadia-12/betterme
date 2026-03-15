@@ -5,11 +5,15 @@ const BMTools = {
   // ── Audio ─────────────────────────────────────────────────────────────────
   _audio: null,
 
-  _playAudio(filename, onEnd) {
+  _playAudio(filename, onEnd, fallbackText) {
     this._stopAudio();
     this._audio = new Audio(`audio/${filename}`);
-    if (onEnd) this._audio.addEventListener('ended', onEnd);
-    this._audio.play().catch(() => { if (onEnd) setTimeout(onEnd, 3000); });
+    this._audio.addEventListener('ended', () => { if (onEnd) onEnd(); });
+    this._audio.play().catch(() => {
+      // File missing — fall back to speechSynthesis then call onEnd
+      if (fallbackText) this._speak(fallbackText, 6000);
+      setTimeout(() => { if (onEnd) onEnd(); }, fallbackText ? 5000 : 500);
+    });
   },
 
   _stopAudio() {
@@ -20,10 +24,11 @@ const BMTools = {
     }
   },
 
-  // Soft sine-wave bowl tone — phase transition cue (no file needed)
+  // Soft sine-wave bowl tone — uses the AudioContext created on tap in startBreathing()
   _playTone(hz = 432, durationSec = 1.2) {
+    const ctx = this._audioCtx;
+    if (!ctx) return;
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -36,6 +41,34 @@ const BMTools = {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + durationSec);
     } catch (e) {}
+  },
+
+  // Gentle continuous ambient drone during breathing phases (174 Hz — calming)
+  _startDrone() {
+    const ctx = this._audioCtx;
+    if (!ctx || this._drone) return;
+    try {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 174;
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.035, ctx.currentTime + 2);
+      osc.start(ctx.currentTime);
+      this._drone = { osc, gain };
+    } catch (e) {}
+  },
+
+  _stopDrone() {
+    if (!this._drone || !this._audioCtx) return;
+    try {
+      const { osc, gain } = this._drone;
+      gain.gain.linearRampToValueAtTime(0, this._audioCtx.currentTime + 1.5);
+      setTimeout(() => { try { osc.stop(); } catch(e){} }, 1600);
+    } catch (e) {}
+    this._drone = null;
   },
 
   _stopAll() {
@@ -86,12 +119,14 @@ const BMTools = {
     document.getElementById('breath-start-btn').textContent = 'Running…';
     document.getElementById('breath-start-btn').disabled = true;
 
+    // Create AudioContext HERE, directly inside the tap handler — iOS Safari
+    // requires this to happen synchronously in a user gesture, not in callbacks.
+    try {
+      this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
+    } catch (e) { this._audioCtx = null; }
+
     if (CONFIG.USE_ELEVENLABS_AUDIO) {
-      // Audio mode: circle runs its own autonomous loop timed to 0.85× speed.
-      // Voice sets the mood; circle gives exact breathing timing. No drift.
-      this._playAudio('breathing.mp3');
-      this._runAudioBreath();
-    } else {
       // No audio: script-driven with Web Speech API (perfectly synced).
       this._runScript([
         { phase: 'intro',  prompt: "Find a comfortable position. Place one hand on your belly.", subtext: "", duration: 3500 },
@@ -114,25 +149,33 @@ const BMTools = {
   },
 
   // Audio mode: intro mp3 plays first, cycles start on its 'ended' event.
-  // Coaching tips play between cycles (also via ended event). No hardcoded delays.
-  // Phase transitions cued by soft bowl tones. Visual countdown runs at true 4-7-8.
+  // Drone hums throughout. Bowl tones mark phase transitions. Tips play between cycles.
   _runAudioBreath() {
     document.getElementById('breath-prompt').textContent  = 'Close your eyes. Listen.';
     document.getElementById('breath-subtext').textContent = '';
 
-    this._playAudio('breathing-intro.mp3', () => {
-      if (this._breathRunning) this._startBreathCycles();
-    });
+    this._playAudio(
+      'breathing-intro.mp3',
+      () => { if (this._breathRunning) this._startBreathCycles(); },
+      'A craving has arrived. That\'s okay. Cravings are just waves — they always pass. Follow the circle. Let your breath do the rest.'
+    );
   },
 
   _startBreathCycles() {
     const INHALE = 4000, HOLD = 7000, EXHALE = 8000;
-    const TIPS = ['breathing-tip1.mp3', 'breathing-tip2.mp3', 'breathing-tip3.mp3'];
+    const TIPS = [
+      { file: 'breathing-tip1.mp3', text: 'Good. Your nervous system is already calming down.' },
+      { file: 'breathing-tip2.mp3', text: 'The craving is already shifting. It has no hold on you right now.' },
+      { file: 'breathing-tip3.mp3', text: 'One more cycle. You\'re almost through it.' },
+    ];
     let cycle = 0;
+
+    // Start ambient drone — hums softly throughout all cycles
+    this._startDrone();
 
     const runCycle = () => {
       if (!this._breathRunning) return;
-      if (cycle >= 4) { this._finishBreathing(); return; }
+      if (cycle >= 4) { this._stopDrone(); this._finishBreathing(); return; }
 
       [0,1,2,3].forEach(i => {
         document.getElementById(`cd-${i}`).className = 'cycle-dot' +
@@ -161,20 +204,22 @@ const BMTools = {
             const done = cycle;
             cycle++;
 
-            // Reset circle to neutral while tip plays
             document.getElementById('breath-circle').className = 'breath-circle';
             document.getElementById('breath-phase').textContent  = '';
             document.getElementById('breath-count').textContent  = '';
 
             if (done < 3) {
-              // Play coaching tip then start next cycle
               document.getElementById('breath-prompt').textContent = '…';
-              this._playAudio(TIPS[done], () => {
+              const tip = TIPS[done];
+              this._playAudio(tip.file, () => {
                 if (this._breathRunning) runCycle();
-              });
+              }, tip.text);
             } else {
-              // Last cycle — play closing while showing done state
-              this._playAudio('breathing-closing.mp3');
+              this._stopDrone();
+              this._playAudio(
+                'breathing-closing.mp3', null,
+                'You made it. Every craving you\'ve ever had has passed — and so did this one. Real strength.'
+              );
               this._finishBreathing();
             }
           }, EXHALE);
@@ -254,7 +299,9 @@ const BMTools = {
     this._breathRunning = false;
     clearTimeout(this._breathTimer);
     window.speechSynthesis && window.speechSynthesis.cancel();
+    this._stopDrone();
     this._stopAudio();
+    try { if (this._audioCtx) { this._audioCtx.close(); this._audioCtx = null; } } catch(e) {}
   },
 
   // ── PMR ───────────────────────────────────────────────────────────────────
