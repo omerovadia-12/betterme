@@ -38,39 +38,43 @@ const BMTools = {
   _playTone(hz = 432, durationSec = 1.2) {
     const ctx = this._audioCtx;
     if (!ctx) return;
-    if (ctx.state === 'suspended') ctx.resume();
-    try {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = hz;
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationSec);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + durationSec);
-    } catch (e) {}
+    const play = () => {
+      try {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = hz;
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationSec);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + durationSec);
+      } catch (e) {}
+    };
+    if (ctx.state === 'suspended') { ctx.resume().then(play); } else { play(); }
   },
 
   // Gentle continuous ambient drone during breathing phases (174 Hz — calming)
   _startDrone() {
     const ctx = this._audioCtx;
     if (!ctx || this._drone) return;
-    if (ctx.state === 'suspended') ctx.resume();
-    try {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = 174;
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.035, ctx.currentTime + 2);
-      osc.start(ctx.currentTime);
-      this._drone = { osc, gain };
-    } catch (e) {}
+    const start = () => {
+      try {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 174;
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.035, ctx.currentTime + 2);
+        osc.start(ctx.currentTime);
+        this._drone = { osc, gain };
+      } catch (e) {}
+    };
+    if (ctx.state === 'suspended') { ctx.resume().then(start); } else { start(); }
   },
 
   _stopDrone() {
@@ -133,9 +137,21 @@ const BMTools = {
 
     // Create AudioContext HERE, directly inside the tap handler — iOS Safari
     // requires this to happen synchronously in a user gesture, not in callbacks.
+    // Play a silent 1ms tone immediately to permanently unlock the context so it
+    // stays usable after the intro mp3 finishes (which plays via HTML Audio, not Web Audio).
     try {
       this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (this._audioCtx.state === 'suspended') this._audioCtx.resume();
+      const ctx = this._audioCtx;
+      const unlock = () => {
+        const osc = ctx.createOscillator();
+        const g   = ctx.createGain();
+        g.gain.value = 0;
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.001);
+      };
+      if (ctx.state === 'suspended') { ctx.resume().then(unlock); } else { unlock(); }
     } catch (e) { this._audioCtx = null; }
 
     if (CONFIG.USE_ELEVENLABS_AUDIO) {
