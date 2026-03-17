@@ -4,11 +4,22 @@ const BMTools = {
 
   // ── Audio ─────────────────────────────────────────────────────────────────
   _audio: null,
+  _mediaSource: null,
 
   _playAudio(filename, onEnd, fallbackText) {
     this._stopAudio();
     this._audio = new Audio(`audio/${filename}`);
     this._audio.addEventListener('ended', () => { if (onEnd) onEnd(); });
+
+    // Route through AudioContext — this keeps the AudioContext alive on iOS
+    // while the mp3 plays, preventing auto-suspension between intro and cycles.
+    if (this._audioCtx && this._audioCtx.state !== 'closed') {
+      try {
+        this._mediaSource = this._audioCtx.createMediaElementSource(this._audio);
+        this._mediaSource.connect(this._audioCtx.destination);
+      } catch(e) { this._mediaSource = null; }
+    }
+
     this._audio.play().catch(() => {
       // File missing — speak directly via speechSynthesis (bypass USE_ELEVENLABS_AUDIO guard)
       if (fallbackText && window.speechSynthesis) {
@@ -31,6 +42,10 @@ const BMTools = {
       this._audio.pause();
       this._audio.currentTime = 0;
       this._audio = null;
+    }
+    if (this._mediaSource) {
+      try { this._mediaSource.disconnect(); } catch(e) {}
+      this._mediaSource = null;
     }
   },
 
